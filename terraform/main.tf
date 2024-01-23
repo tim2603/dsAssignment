@@ -17,7 +17,7 @@ resource "google_compute_subnetwork" "default" {
 }
 
 # Create a single Compute Engine instance
-resource "google_compute_instance" "default" {
+resource "google_compute_instance" "worker" {
     count = 3
 
   name         = "worker-${count.index}"
@@ -43,6 +43,34 @@ resource "google_compute_instance" "default" {
   }
   
 }
+
+# Create a single Compute Engine instance
+resource "google_compute_instance" "master" {
+
+  name         = "master"
+  machine_type = "e2-micro"
+  zone         = "europe-north1-a"
+  tags         = ["ssh"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+    
+  }
+
+  metadata_startup_script = "${file("startup-script-master.sh")}"
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.default.id
+
+    access_config {
+      # Include this section to give the VM an external IP address
+    }
+  }
+  
+}
+
 
 resource "google_compute_firewall" "ssh" {
   name = "allow-ssh"
