@@ -579,6 +579,7 @@ func (m *Master) uploadFinalFile() {
 	if _, err := io.Copy(w, finalFile); err != nil {
 		logger.Error(err.Error())
 	}
+
 	defer finalFile.Close()
 	defer w.Close()
 }

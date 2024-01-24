@@ -255,11 +255,14 @@ func (worker *Worker) startHeartbeats() {
 }
 
 func main() {
-	own_port := os.Args[3]
-	master_port := os.Args[2]
+
 	master_id := os.Args[1]
-	master_address := "localhost:" + master_port
-	own_address := "localhost:" + own_port
+	master_ip := os.Args[2]
+	master_port := os.Args[3]
+	own_ip := os.Args[4]
+	own_port := os.Args[5]
+	master_address := master_ip + ":" + master_port
+	own_address := own_ip + ":" + own_port
 	logger.Init("../../logs/worker-" + master_id + ".log")
 	logger.Debug("Starting")
 
