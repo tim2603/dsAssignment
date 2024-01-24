@@ -403,6 +403,7 @@ func (m *Master) OnNotificationAboutFinishedMapTask(workerID string) {
 	}
 	if m.areAllWorkerDoneWithMapping() {
 		m.task.State = general.BeforeReducing
+		m.intermediateFiles = listFilesInDir("../worker/intermediate_files/")
 		m.startReducePhase()
 	}
 }
@@ -486,35 +487,37 @@ func (master *Master) StartWorkerCheck() {
 	logger.Debug("MasterCheck stopped. Program exiting.")
 }
 
+func listFilesInDir(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	names := make([]string, len(entries))
+	for i, entry := range entries {
+		names[i] = dir + entry.Name()
+	}
+	logger.Debug("Files in directory: " + strings.Join(names, ", "))
+	return names
+}
+
 func main() {
 	// file := initLogger()
+
 	logger.Init("../../logs/master.log")
 	logger.Debug("Starting")
+	n_workers, error := strconv.Atoi(os.Args[1])
+	if error != nil {
+		logger.Error(error.Error())
+	}
 
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		logger.Error("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	filenames := [10]string{"../../data/1_bank_customers.txt",
-		"../../../data/2_bank_customers.txt",
-		"../../../data/3_bank_customers.txt",
-		"../../../data/4_bank_customers.txt",
-		"../../../data/5_bank_customers.txt",
-		"../../../data/6_bank_customers.txt",
-		"../../../data/7_bank_customers.txt",
-		"../../../data/8_bank_customers.txt",
-		"../../../data/9_bank_customers.txt",
-		"../../../data/10_bank_customers.txt"}
+	filenames := listFilesInDir("../../../data/")
 
-	intermediateFiles := [6]string{"../../../real_project/grpc/worker/Intermediate-file-1",
-		"../../../real_project/grpc/worker/Intermediate-file-2",
-		"../../../real_project/grpc/worker/Intermediate-file-3",
-		"../../../real_project/grpc/worker/Intermediate-file-4",
-		"../../../real_project/grpc/worker/Intermediate-file-5",
-		"../../../real_project/grpc/worker/Intermediate-file-6"}
-
-	master := &Master{interval: 15, task: &general.MapReduceTask{N_mappers: 3, N_reducers: 3}, inputFiles: filenames[:], intermediateFiles: intermediateFiles[:], currentTournamentTreeRecords: make(map[string]RecordEntry, 6), sortedTournamentTreeRecords: make([]RecordEntry, 0, 10000), threshholdForRecordsToWrite: 10000}
+	master := &Master{interval: 15, task: &general.MapReduceTask{N_mappers: n_workers, N_reducers: n_workers}, inputFiles: filenames[:], currentTournamentTreeRecords: make(map[string]RecordEntry, 6), sortedTournamentTreeRecords: make([]RecordEntry, 0, 10000), threshholdForRecordsToWrite: 10000}
 	ds.RegisterCommunicationWithMasterServiceServer(s, &Server{master: master})
 	go func() {
 		if err := s.Serve(lis); err != nil {

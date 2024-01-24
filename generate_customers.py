@@ -17,7 +17,7 @@ num_entries = 10000
 
 # Create 10 text files with customer data
 for file_num in range(1, 11):
-    file_name = f"{file_num}_bank_customers.txt"
+    file_name = f"data/{file_num}_bank_customers.txt"
     customer_data = generate_bank_customer_data(num_entries)
     
     with open(file_name, "w") as file:

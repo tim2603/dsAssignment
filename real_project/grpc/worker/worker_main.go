@@ -98,7 +98,7 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 
 	//save in intermediate file
 	workerId := worker.masterID
-	newFile, err := os.Create("Intermediate-file-" + workerId)
+	newFile, err := os.Create("./intermediate-files/Intermediate-file-" + workerId)
 	if err != nil {
 	}
 	defer newFile.Close()
@@ -181,7 +181,6 @@ func (worker *Worker) startHeartbeats() {
 			case <-ticker.C:
 				worker.masterClient.SendHeartBeatToMaster(context.Background(), &ds.Heartbeat{WorkerId: &ds.WorkerID{WorkerId: worker.masterID}})
 				logger.Debug("Sending heartbeat")
-				println("Sending heartbeat")
 			}
 		}
 	}()
