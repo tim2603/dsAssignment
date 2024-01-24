@@ -123,18 +123,8 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 	workerId := worker.masterID
 
 	worker.writeContentToFileInLocalStorage(concattedFiles, "./intermediate-files/Intermediate-file-"+workerId)
-	worker.uploadFile("./intermediate-files/Intermediate-file-"+workerId, "intermediate-files/Intermediate-file-"+workerId+".txt")
-	// worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
-	// newFile, err := os.Create("./intermediate-files/Intermediate-file-" + workerId)
-	// if err != nil {
-	// }
-	// defer newFile.Close()
-
-	// for _, line := range concattedFiles {
-	// 	newFile.WriteString(line + "\n")
-	// }
-
-	// newFile.Sync()
+	// worker.uploadFile("./intermediate-files/Intermediate-file-"+workerId, "intermediate-files/Intermediate-file-"+workerId+".txt")
+	worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
 
 	logger.Debug("Finished dummy map task")
 }
@@ -167,20 +157,20 @@ func (worker *Worker) uploadFile(filename string, dest string) {
 	defer w.Close()
 }
 
-// func (worker *Worker) writeContentToFileInCloudStorage(content []string, filename string) {
-// 	logger.Debug("Writing content to file " + filename + " in Cloud Storage")
-// 	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
+func (worker *Worker) writeContentToFileInCloudStorage(content []string, filename string) {
+	logger.Debug("Writing content to file " + filename + " in Cloud Storage")
+	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
 
-// 	obj := bkt.Object(filename)
-// 	newFile := obj.NewWriter(context.Background())
-// 	// if err != nil {
-// 	// }
-// 	defer newFile.Close()
+	obj := bkt.Object(filename)
+	newFile := obj.NewWriter(context.Background())
+	// if err != nil {
+	// }
+	defer newFile.Close()
 
-// 	for _, line := range content {
-// 		newFile.Write([]byte(line + "\n"))
-// 	}
-// }
+	for _, line := range content {
+		newFile.Write([]byte(line + "\n"))
+	}
+}
 
 func (worker *Worker) sortFiles(files []string) []string {
 	sort.Slice(files, func(i, j int) bool {
