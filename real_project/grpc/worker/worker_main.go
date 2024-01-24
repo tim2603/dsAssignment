@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -28,11 +29,22 @@ type Worker struct {
 	smallest_value_pointer    int
 	MutexLock                 sync.Mutex
 	intermediate_file_content []string
+	cloudStorageClient        *storage.Client
 }
 
 type Server struct {
 	ds.UnsafeCommunicationWithWorkerServiceServer
 	worker *Worker
+}
+
+func (worker *Worker) connectToCloudStorage() {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	logger.Debug("Connected to Google Cloud Storage")
+	worker.cloudStorageClient = client
 }
 
 func (s *Server) RestartTournamentTree(context.Context, *ds.EmptyMessage) (*ds.EmptyMessage, error) {
@@ -64,7 +76,7 @@ func (worker *Worker) onAssignedMapTask(mapTask *ds.MapTask) {
 	worker.masterClient.NotifyAboutFinishedMapTask(context.Background(), &ds.WorkerID{WorkerId: worker.masterID})
 }
 
-func concatFiles(filenames []string) []string {
+func (worker *Worker) concatFiles(filenames []string) []string {
 	var s []string
 	s = make([]string, 0)
 	for _, filename := range filenames {
@@ -76,7 +88,16 @@ func concatFiles(filenames []string) []string {
 			if err != nil {
 			}
 		}(file)
-		scanner := bufio.NewScanner(file)
+
+		bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
+		obj := bkt.Object(filename)
+		reader, error := obj.NewReader(context.Background())
+		if error != nil {
+			logger.Error(error.Error())
+		}
+		scanner := bufio.NewScanner(reader)
+
+		// scanner := bufio.NewScanner(file)
 
 		for scanner.Scan() {
 			s = append(s, scanner.Text())
@@ -94,23 +115,40 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 	// The following code reads the data from the given file line by line
 	// There has to be logic that takes the correct file
 
-	concattedFiles := concatFiles(mapTask.GetFilenames())
+	concattedFiles := worker.concatFiles(mapTask.GetFilenames())
 	worker.sortFiles(concattedFiles)
 
 	//save in intermediate file
 	workerId := worker.masterID
-	newFile, err := os.Create("./intermediate-files/Intermediate-file-" + workerId)
-	if err != nil {
-	}
-	defer newFile.Close()
 
-	for _, line := range concattedFiles {
-		newFile.WriteString(line + "\n")
-	}
+	worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
+	// newFile, err := os.Create("./intermediate-files/Intermediate-file-" + workerId)
+	// if err != nil {
+	// }
+	// defer newFile.Close()
 
-	newFile.Sync()
+	// for _, line := range concattedFiles {
+	// 	newFile.WriteString(line + "\n")
+	// }
+
+	// newFile.Sync()
 
 	logger.Debug("Finished dummy map task")
+}
+
+func (worker *Worker) writeContentToFileInCloudStorage(content []string, filename string) {
+	logger.Debug("Writing content to file " + filename + " in Cloud Storage")
+	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
+
+	obj := bkt.Object(filename)
+	newFile := obj.NewWriter(context.Background())
+	// if err != nil {
+	// }
+	defer newFile.Close()
+
+	for _, line := range content {
+		newFile.Write([]byte(line + "\n"))
+	}
 }
 
 func (worker *Worker) sortFiles(files []string) []string {
@@ -127,9 +165,9 @@ func (worker *Worker) reducing(reduceTask *ds.ReduceTask) {
 	// TODO: Read intermediate file
 	files := reduceTask.GetIntermediateFile()
 	if len(files) > 1 {
-		worker.intermediate_file_content = worker.sortFiles(concatFiles(files))
+		worker.intermediate_file_content = worker.sortFiles(worker.concatFiles(files))
 	} else {
-		worker.intermediate_file_content = concatFiles(files)
+		worker.intermediate_file_content = worker.concatFiles(files)
 	}
 
 	logger.Debug("Reducing " + fmt.Sprintf("%d", len(worker.intermediate_file_content)) + " entries")
@@ -205,6 +243,7 @@ func main() {
 	logger.Debug("Starting")
 
 	worker := &Worker{masterID: master_id, masterClient: getMasterClient(master_address)}
+	worker.connectToCloudStorage()
 
 	lis, err := net.Listen("tcp", ":"+own_port)
 	if err != nil {

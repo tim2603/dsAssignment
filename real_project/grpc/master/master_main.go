@@ -10,6 +10,7 @@ import (
 	logging "ds/grpc/logger"
 	"flag"
 	"fmt"
+	"io"
 	"math"
 	"net"
 	"os"
@@ -18,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -55,6 +58,7 @@ type Master struct {
 	currentTournamentTreeRecords map[string]RecordEntry
 	sortedTournamentTreeRecords  []RecordEntry
 	threshholdForRecordsToWrite  int
+	cloudStorageClient           *storage.Client
 }
 
 type WorkerStatus struct {
@@ -69,6 +73,16 @@ type WorkerStatus struct {
 type RecordEntry struct {
 	record string
 	value  float32
+}
+
+func (master *Master) connectToCloudStorage() {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	logger.Debug("Connected to Google Cloud Storage")
+	master.cloudStorageClient = client
 }
 
 // SendCurrentTournamentTreeValue implements ds.CommunicationWithMasterServiceServer.
@@ -151,6 +165,15 @@ func (m *Master) writeSortedRecordsToFile(records []RecordEntry) {
 	}
 
 	newFile.Sync()
+
+	// logger.Debug("Writing sorted records to Cloud Storage")
+	// bkt := m.cloudStorageClient.Bucket("distributed_systems2024")
+	// w := bkt.Object("FinalFile").NewWriter(context.Background())
+	// for i := range records {
+	// 	w.Write([]byte(records[i].record + "\n"))
+	// 	// w.WriteString(records[i].record + "\n")
+	// }
+	// w.Close()
 }
 
 // if workers are not responding, set the status and reshedule the task
@@ -318,7 +341,8 @@ func (m *Master) startReducePhase() {
 	// intermediate files auch auf google
 	// wait for every answer --> const communication via tournament tree method
 	m.task.State = general.Reducing
-	m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
+	// m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
+	m.intermediateFiles = m.listFilesInCloudStorageDir("intermediate-files/", ".txt")
 	m.distributeCalculation(len(m.intermediateFiles), general.AfterMapping)
 	logger.Debug("Starting Reduce phase with " + strconv.Itoa(len(m.activeWorkers)) + " workers")
 	a := 0
@@ -452,6 +476,7 @@ func (m *Master) OnNotificationAboutFinishedReduceTask(workerID string) {
 	if m.areAllWorkerDoneWithReducing() {
 		m.task.State = general.AfterReducing
 		m.writeSortedRecordsToFile(m.sortedTournamentTreeRecords)
+		m.uploadFinalFile()
 		logger.Debug("MapReduce-task finished!")
 		fmt.Println("MapReduce-task finished!")
 	}
@@ -520,6 +545,44 @@ func listFilesInDir(dir string) []string {
 	return names
 }
 
+func (master *Master) listFilesInCloudStorageDir(dir string, suffix string) []string {
+	query := &storage.Query{Prefix: dir}
+
+	var names []string
+	bkt := master.cloudStorageClient.Bucket("distributed_systems2024")
+	it := bkt.Objects(context.Background(), query)
+	for {
+		attrs, err := it.Next()
+
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		if strings.HasSuffix(attrs.Name, suffix) {
+			names = append(names, attrs.Name)
+		}
+	}
+	logger.Debug("Files in cloud storage directory: " + strings.Join(names, ", "))
+	return names
+}
+
+func (m *Master) uploadFinalFile() {
+	logger.Debug("Writing sorted records to Cloud Storage")
+	bkt := m.cloudStorageClient.Bucket("distributed_systems2024")
+	w := bkt.Object("FinalFile").NewWriter(context.Background())
+	finalFile, err := os.Open("FinalFile")
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	if _, err := io.Copy(w, finalFile); err != nil {
+		logger.Error(err.Error())
+	}
+	defer finalFile.Close()
+	defer w.Close()
+}
+
 func main() {
 	// file := initLogger()
 
@@ -535,9 +598,11 @@ func main() {
 		logger.Error("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	filenames := listFilesInDir("../../../data/")
+	// filenames := listFilesInDir("../../../data/")
 
-	master := &Master{interval: 15, task: &general.MapReduceTask{N_mappers: n_workers, N_reducers: n_workers}, inputFiles: filenames[:], currentTournamentTreeRecords: make(map[string]RecordEntry, 6), sortedTournamentTreeRecords: make([]RecordEntry, 0, 10000), threshholdForRecordsToWrite: 10000}
+	master := &Master{interval: 15, task: &general.MapReduceTask{N_mappers: n_workers, N_reducers: n_workers}, currentTournamentTreeRecords: make(map[string]RecordEntry, 6), sortedTournamentTreeRecords: make([]RecordEntry, 0, 10000), threshholdForRecordsToWrite: 10000}
+	master.connectToCloudStorage()
+	master.inputFiles = master.listFilesInCloudStorageDir("input-data", ".txt")
 	ds.RegisterCommunicationWithMasterServiceServer(s, &Server{master: master})
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -548,4 +613,5 @@ func main() {
 	master.StartWorkerCheck()
 
 	defer logger.CloseFile()
+	defer master.cloudStorageClient.Close()
 }
