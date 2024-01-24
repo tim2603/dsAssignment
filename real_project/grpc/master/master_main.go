@@ -87,10 +87,10 @@ func (m *Master) getValueFromRecordEntry(entry string) float32 {
 
 func (m *Master) onReceivedCurrentTournamentTreeValue(entry string, workerID string) {
 	logger.Debug("Received entry " + entry + " from worker " + workerID)
+	m.MutexLock.Lock()
 	m.currentTournamentTreeRecords[workerID] = RecordEntry{record: entry, value: m.getValueFromRecordEntry(entry)}
 	if len(m.currentTournamentTreeRecords) == m.task.N_reducers {
 		// TODO: Das muss eigentlich die Anzahl der intermediate files sein
-		m.MutexLock.Lock()
 
 		logger.Debug("Beginning tournament tree iteration")
 		// find smallest value
@@ -135,8 +135,8 @@ func (m *Master) onReceivedCurrentTournamentTreeValue(entry string, workerID str
 				// 	}(i)
 			}
 		}
-		m.MutexLock.Unlock()
 	}
+	m.MutexLock.Unlock()
 
 }
 
@@ -258,7 +258,7 @@ func (m *Master) getCountOfActiveAndFullyConnectedWorkers() int {
 func (m *Master) startMapPhase() {
 	m.task.State = general.Mapping
 	logger.Debug("Starting Map phase with " + strconv.Itoa(len(m.activeWorkers)) + " workers")
-	m.distributeCalculation()
+	m.distributeCalculation(len(m.inputFiles), general.BeforeMapping)
 	a := 0
 	b := 0
 	counter := m.taskPackageRest
@@ -288,15 +288,27 @@ func (m *Master) startMapPhase() {
 	}
 }
 
-func (m *Master) distributeCalculation() {
+// func (m *Master) distributeCalculation() {
+// 	readyWorkers := 0
+// 	for i := range m.activeWorkers {
+// 		if (m.activeWorkers[i].workerState == Alive) && (m.activeWorkers[i].taskState == general.BeforeMapping) {
+// 			readyWorkers = readyWorkers + 1
+// 		}
+// 	}
+// 	m.taskPackageRest = len(m.inputFiles) % int(readyWorkers)
+// 	m.taskPackageAmount = len(m.inputFiles) / int(readyWorkers)
+// }
+
+func (m *Master) distributeCalculation(packages int, taskState general.TaskState) {
 	readyWorkers := 0
 	for i := range m.activeWorkers {
-		if (m.activeWorkers[i].workerState == Alive) && (m.activeWorkers[i].taskState == general.BeforeMapping) {
+		if (m.activeWorkers[i].workerState == Alive) && (m.activeWorkers[i].taskState == taskState) {
 			readyWorkers = readyWorkers + 1
 		}
 	}
-	m.taskPackageRest = len(m.inputFiles) % int(readyWorkers)
-	m.taskPackageAmount = len(m.inputFiles) / int(readyWorkers)
+	fmt.Println(readyWorkers)
+	m.taskPackageRest = packages % int(readyWorkers)
+	m.taskPackageAmount = packages / int(readyWorkers)
 }
 
 func (m *Master) startReducePhase() {
@@ -306,6 +318,8 @@ func (m *Master) startReducePhase() {
 	// intermediate files auch auf google
 	// wait for every answer --> const communication via tournament tree method
 	m.task.State = general.Reducing
+	m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
+	m.distributeCalculation(len(m.intermediateFiles), general.AfterMapping)
 	logger.Debug("Starting Reduce phase with " + strconv.Itoa(len(m.activeWorkers)) + " workers")
 	a := 0
 	b := 0
@@ -314,7 +328,12 @@ func (m *Master) startReducePhase() {
 			m.activeWorkers[i].taskState = general.Reducing
 			a = i * m.taskPackageAmount
 			b = (i + 1) * m.taskPackageAmount
-			fileSlice := m.inputFiles[a:b]
+			fmt.Println(a)
+			fmt.Println(b)
+			fmt.Println(m.taskPackageAmount)
+			logger.Debug("Intermediate files: " + strings.Join(m.intermediateFiles, ", "))
+			fileSlice := m.intermediateFiles[a:b]
+
 			m.activeWorkers[i].taskSlice = fileSlice
 			go func(i int) {
 				m.activeWorkers[i].workerClient.AssignReduceTask(context.Background(), &ds.ReduceTask{IntermediateFile: fileSlice})
@@ -403,7 +422,7 @@ func (m *Master) OnNotificationAboutFinishedMapTask(workerID string) {
 	}
 	if m.areAllWorkerDoneWithMapping() {
 		m.task.State = general.BeforeReducing
-		m.intermediateFiles = listFilesInDir("../worker/intermediate_files/")
+		// m.intermediateFiles = listFilesInDir("../worker/intermediate_files/")
 		m.startReducePhase()
 	}
 }

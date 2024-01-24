@@ -6,6 +6,7 @@ import (
 	"ds/grpc/ds"
 	logging "ds/grpc/logger"
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"sort"
@@ -131,6 +132,7 @@ func (worker *Worker) reducing(reduceTask *ds.ReduceTask) {
 		worker.intermediate_file_content = concatFiles(files)
 	}
 
+	logger.Debug("Reducing " + fmt.Sprintf("%d", len(worker.intermediate_file_content)) + " entries")
 	for worker.smallest_value_pointer < len(worker.intermediate_file_content) {
 		logger.Debug("Sending current tree entry of " + worker.intermediate_file_content[worker.smallest_value_pointer])
 		worker.masterClient.SendCurrentTournamentTreeValue(context.Background(), &ds.TournamentTreeValue{Value: worker.intermediate_file_content[worker.smallest_value_pointer], WorkerId: &ds.WorkerID{WorkerId: worker.masterID}})
