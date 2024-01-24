@@ -516,6 +516,7 @@ func listFilesInDir(dir string) []string {
 		names[i] = dir + entry.Name()
 	}
 	logger.Debug("Files in directory: " + strings.Join(names, ", "))
+	fmt.Println("Files in directory: " + strings.Join(names, ", "))
 	return names
 }
 
