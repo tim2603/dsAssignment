@@ -158,7 +158,7 @@ func (worker *Worker) uploadFile(filename string, dest string) {
 }
 
 func (worker *Worker) writeContentToFileInCloudStorage(content []string, filename string) {
-	logger.Debug("Writing content to file " + filename + " in Cloud Storage")
+	logger.Debug("Writing content to file " + filename + " in Cloud Storage with " + fmt.Sprintf("%d", len(content)) + " entries")
 	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
 
 	obj := bkt.Object(filename)
