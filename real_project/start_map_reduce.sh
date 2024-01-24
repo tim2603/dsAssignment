@@ -18,6 +18,7 @@ cd ../worker/
 for (( i=1; i<=$AMOUNT_WORKERS; i++ ))
 do
     echo starting worker $i at port 5006"$i"
+    sleep 1s
     ./worker $i 50051 5006"$i" &
 done
 
