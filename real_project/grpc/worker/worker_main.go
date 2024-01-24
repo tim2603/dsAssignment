@@ -7,6 +7,7 @@ import (
 	logging "ds/grpc/logger"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"sort"
@@ -121,7 +122,9 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 	//save in intermediate file
 	workerId := worker.masterID
 
-	worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
+	worker.writeContentToFileInLocalStorage(concattedFiles, "./intermediate-files/Intermediate-file-"+workerId)
+	worker.uploadFile("./intermediate-files/Intermediate-file-"+workerId, "intermediate-files/Intermediate-file-"+workerId+".txt")
+	// worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
 	// newFile, err := os.Create("./intermediate-files/Intermediate-file-" + workerId)
 	// if err != nil {
 	// }
@@ -136,20 +139,48 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 	logger.Debug("Finished dummy map task")
 }
 
-func (worker *Worker) writeContentToFileInCloudStorage(content []string, filename string) {
-	logger.Debug("Writing content to file " + filename + " in Cloud Storage")
-	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
-
-	obj := bkt.Object(filename)
-	newFile := obj.NewWriter(context.Background())
-	// if err != nil {
-	// }
+func (worker *Worker) writeContentToFileInLocalStorage(content []string, filename string) {
+	newFile, err := os.Create(filename)
+	if err != nil {
+	}
 	defer newFile.Close()
 
 	for _, line := range content {
-		newFile.Write([]byte(line + "\n"))
+		newFile.WriteString(line + "\n")
 	}
+
+	newFile.Sync()
 }
+
+func (worker *Worker) uploadFile(filename string, dest string) {
+	logger.Debug("Writing sorted records to Cloud Storage")
+	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
+	w := bkt.Object(dest).NewWriter(context.Background())
+	finalFile, err := os.Open(filename)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	if _, err := io.Copy(w, finalFile); err != nil {
+		logger.Error(err.Error())
+	}
+	defer finalFile.Close()
+	defer w.Close()
+}
+
+// func (worker *Worker) writeContentToFileInCloudStorage(content []string, filename string) {
+// 	logger.Debug("Writing content to file " + filename + " in Cloud Storage")
+// 	bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
+
+// 	obj := bkt.Object(filename)
+// 	newFile := obj.NewWriter(context.Background())
+// 	// if err != nil {
+// 	// }
+// 	defer newFile.Close()
+
+// 	for _, line := range content {
+// 		newFile.Write([]byte(line + "\n"))
+// 	}
+// }
 
 func (worker *Worker) sortFiles(files []string) []string {
 	sort.Slice(files, func(i, j int) bool {
