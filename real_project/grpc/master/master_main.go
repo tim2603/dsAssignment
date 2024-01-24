@@ -274,7 +274,7 @@ func (m *Master) startMapPhase() {
 			fileSlice := make([]string, b-a)
 			copy(fileSlice, m.inputFiles[a:b])
 			// fileSlice := m.inputFiles[a:b]
-			print(counter)
+			fmt.Println(counter)
 			if counter != 0 {
 				fileSlice = append(fileSlice, m.inputFiles[(length)-counter:(length)-(counter-1)]...)
 				counter--
@@ -496,23 +496,23 @@ func main() {
 		logger.Error("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	filenames := [10]string{"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/1_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/2_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/3_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/4_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/5_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/6_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/7_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/8_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/9_bank_customers.txt",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/data/10_bank_customers.txt"}
+	filenames := [10]string{"../../data/1_bank_customers.txt",
+		"../../../data/2_bank_customers.txt",
+		"../../../data/3_bank_customers.txt",
+		"../../../data/4_bank_customers.txt",
+		"../../../data/5_bank_customers.txt",
+		"../../../data/6_bank_customers.txt",
+		"../../../data/7_bank_customers.txt",
+		"../../../data/8_bank_customers.txt",
+		"../../../data/9_bank_customers.txt",
+		"../../../data/10_bank_customers.txt"}
 
-	intermediateFiles := [6]string{"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/real_project/grpc/worker/Intermediate-file-1",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/real_project/grpc/worker/Intermediate-file-2",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/real_project/grpc/worker/Intermediate-file-3",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/real_project/grpc/worker/Intermediate-file-4",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/real_project/grpc/worker/Intermediate-file-5",
-		"/home/tim/Schreibtisch/Studium/WiSe2324/project-ds-PatrickMi/real_project/grpc/worker/Intermediate-file-6"}
+	intermediateFiles := [6]string{"../../../real_project/grpc/worker/Intermediate-file-1",
+		"../../../real_project/grpc/worker/Intermediate-file-2",
+		"../../../real_project/grpc/worker/Intermediate-file-3",
+		"../../../real_project/grpc/worker/Intermediate-file-4",
+		"../../../real_project/grpc/worker/Intermediate-file-5",
+		"../../../real_project/grpc/worker/Intermediate-file-6"}
 
 	master := &Master{interval: 15, task: &general.MapReduceTask{N_mappers: 3, N_reducers: 3}, inputFiles: filenames[:], intermediateFiles: intermediateFiles[:], currentTournamentTreeRecords: make(map[string]RecordEntry, 6), sortedTournamentTreeRecords: make([]RecordEntry, 0, 10000), threshholdForRecordsToWrite: 10000}
 	ds.RegisterCommunicationWithMasterServiceServer(s, &Server{master: master})
