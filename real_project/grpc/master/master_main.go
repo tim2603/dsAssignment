@@ -104,13 +104,13 @@ func (m *Master) getValueFromRecordEntry(entry string) float32 {
 }
 
 func (m *Master) onReceivedCurrentTournamentTreeValue(entry string, workerID string) {
-	logger.Debug("Received entry " + entry + " from worker " + workerID)
+	// logger.Debug("Received entry " + entry + " from worker " + workerID)
 	m.MutexLock.Lock()
 	m.currentTournamentTreeRecords[workerID] = RecordEntry{record: entry, value: m.getValueFromRecordEntry(entry)}
 	if len(m.currentTournamentTreeRecords) == m.task.N_reducers {
 		// TODO: Das muss eigentlich die Anzahl der intermediate files sein
 
-		logger.Debug("Beginning tournament tree iteration")
+		// logger.Debug("Beginning tournament tree iteration")
 		// find smallest value
 		var smallestValue RecordEntry = RecordEntry{record: "", value: math.MaxFloat32}
 		var workerWithSmallestValue string = ""
@@ -139,7 +139,7 @@ func (m *Master) onReceivedCurrentTournamentTreeValue(entry string, workerID str
 		}
 		m.sortedTournamentTreeRecords = append(m.sortedTournamentTreeRecords, smallestValue)
 
-		logger.Debug("Selecting value " + fmt.Sprintf("%f", smallestValue.value) + " from worker " + workerWithSmallestValue)
+		// logger.Debug("Selecting value " + fmt.Sprintf("%f", smallestValue.value) + " from worker " + workerWithSmallestValue)
 
 		for i := range m.activeWorkers {
 			if m.activeWorkers[i].workerID == workerWithSmallestValue {
