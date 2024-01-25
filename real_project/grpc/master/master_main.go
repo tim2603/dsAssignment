@@ -592,7 +592,7 @@ func (m *Master) uploadFinalFile() {
 func main() {
 	// file := initLogger()
 
-	logger.Init("../../logs/master.log")
+	logger.Init("/master.log")
 	logger.Debug("Starting")
 	n_workers, error := strconv.Atoi(os.Args[1])
 	if error != nil {
