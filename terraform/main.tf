@@ -40,36 +40,35 @@ resource "google_compute_instance" "worker" {
     access_config {
       # Include this section to give the VM an external IP address
     }
-  }
-  
+  }  
 }
 
-# Create a single Compute Engine instance
-resource "google_compute_instance" "master" {
+# # Create a single Compute Engine instance
+# resource "google_compute_instance" "master" {
 
-  name         = "master"
-  machine_type = "e2-micro"
-  zone         = "europe-north1-a"
-  tags         = ["ssh"]
+#   name         = "master"
+#   machine_type = "n2-standard-2"
+#   zone         = "europe-north1-a"
+#   tags         = ["ssh"]
 
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-11"
-    }
+#   boot_disk {
+#     initialize_params {
+#       image = "debian-cloud/debian-11"
+#     }
     
-  }
+#   }
 
-  metadata_startup_script = "${file("startup-script-master.sh")}"
+#   metadata_startup_script = "${file("startup-script-master.sh")}"
 
-  network_interface {
-    subnetwork = google_compute_subnetwork.default.id
+#   network_interface {
+#     subnetwork = google_compute_subnetwork.default.id
 
-    access_config {
-      # Include this section to give the VM an external IP address
-    }
-  }
+#     access_config {
+#       # Include this section to give the VM an external IP address
+#     }
+#   }
   
-}
+# }
 
 
 resource "google_compute_firewall" "ssh" {

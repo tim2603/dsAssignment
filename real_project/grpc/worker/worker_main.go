@@ -23,6 +23,8 @@ import (
 
 var logger = logging.Logger{}
 
+var startTime = time.Now()
+
 type Worker struct {
 	masterID     string // Maybe rename it to workerID since it is used in the master to identify the worker
 	masterClient ds.CommunicationWithMasterServiceClient
@@ -110,6 +112,8 @@ func (worker *Worker) concatFiles(filenames []string) []string {
 }
 
 func (worker *Worker) mapping(mapTask *ds.MapTask) {
+	var mapStartTime = time.Now()
+
 	// This is the place where the mapping happens
 	logger.Debug("Mapping " + mapTask.String())
 	//sort my stuff
@@ -127,6 +131,7 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 	worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
 
 	logger.Debug("Finished dummy map task")
+	fmt.Printf("Time until map task finished: %v\n", time.Since(mapStartTime))
 }
 
 func (worker *Worker) writeContentToFileInLocalStorage(content []string, filename string) {
@@ -182,6 +187,7 @@ func (worker *Worker) sortFiles(files []string) []string {
 }
 
 func (worker *Worker) reducing(reduceTask *ds.ReduceTask) {
+	var reduceStartTime = time.Now()
 	// This is the place where the reducing happens
 	// TODO: Read intermediate file
 	files := reduceTask.GetIntermediateFile()
@@ -198,6 +204,7 @@ func (worker *Worker) reducing(reduceTask *ds.ReduceTask) {
 		time.Sleep(time.Second * 2)
 	}
 	logger.Debug("Finished reduce task")
+	fmt.Printf("Time until reduce task finished: %v\n", time.Since(reduceStartTime))
 	worker.masterClient.NotifyAboutFinishedReduceTask(context.Background(), &ds.WorkerID{WorkerId: worker.masterID})
 }
 

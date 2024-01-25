@@ -40,6 +40,10 @@ const (
 	Dead
 )
 
+var startTime = time.Now()
+var mapStartTime = time.Now()
+var reduceStartTime = time.Now()
+
 type Master struct {
 	mapTaskStatus                map[string]int
 	reduceTaskStatus             map[int]int
@@ -279,6 +283,9 @@ func (m *Master) getCountOfActiveAndFullyConnectedWorkers() int {
 }
 
 func (m *Master) startMapPhase() {
+	mapStartTime = time.Now()
+	fmt.Printf("Time until map started: %v\n", time.Since(startTime))
+
 	m.task.State = general.Mapping
 	logger.Debug("Starting Map phase with " + strconv.Itoa(len(m.activeWorkers)) + " workers")
 	m.distributeCalculation(len(m.inputFiles), general.BeforeMapping)
@@ -297,7 +304,6 @@ func (m *Master) startMapPhase() {
 			fileSlice := make([]string, b-a)
 			copy(fileSlice, m.inputFiles[a:b])
 			// fileSlice := m.inputFiles[a:b]
-			fmt.Println(counter)
 			if counter != 0 {
 				fileSlice = append(fileSlice, m.inputFiles[(length)-counter:(length)-(counter-1)]...)
 				counter--
@@ -329,7 +335,6 @@ func (m *Master) distributeCalculation(packages int, taskState general.TaskState
 			readyWorkers = readyWorkers + 1
 		}
 	}
-	fmt.Println(readyWorkers)
 	m.taskPackageRest = packages % int(readyWorkers)
 	m.taskPackageAmount = packages / int(readyWorkers)
 }
@@ -340,6 +345,9 @@ func (m *Master) startReducePhase() {
 	// TODO: copy map phase
 	// intermediate files auch auf google
 	// wait for every answer --> const communication via tournament tree method
+	reduceStartTime = time.Now()
+	fmt.Printf("Time until reduce started: %v\n", time.Since(startTime))
+
 	m.task.State = general.Reducing
 	// m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
 	m.intermediateFiles = m.listFilesInCloudStorageDir("intermediate-files/", ".txt")
@@ -352,9 +360,6 @@ func (m *Master) startReducePhase() {
 			m.activeWorkers[i].taskState = general.Reducing
 			a = i * m.taskPackageAmount
 			b = (i + 1) * m.taskPackageAmount
-			fmt.Println(a)
-			fmt.Println(b)
-			fmt.Println(m.taskPackageAmount)
 			logger.Debug("Intermediate files: " + strings.Join(m.intermediateFiles, ", "))
 			fileSlice := m.intermediateFiles[a:b]
 
@@ -426,7 +431,6 @@ func (m *Master) OnReceivedHeartbeatFromWorker(workerID string) {
 		if s.workerID == workerID {
 			// s.timestamp = *currentTime
 			m.activeWorkers[index].timestamp = *currentTime
-			// fmt.Println(currentTime.AsTime().String() + "In der Schleife")
 			isInList = true
 		}
 	}
@@ -445,6 +449,7 @@ func (m *Master) OnNotificationAboutFinishedMapTask(workerID string) {
 
 	}
 	if m.areAllWorkerDoneWithMapping() {
+		fmt.Printf("Time until map finished: %v\n", time.Since(mapStartTime))
 		m.task.State = general.BeforeReducing
 		// m.intermediateFiles = listFilesInDir("../worker/intermediate_files/")
 		m.startReducePhase()
@@ -454,8 +459,6 @@ func (m *Master) OnNotificationAboutFinishedMapTask(workerID string) {
 func (m *Master) areAllWorkerDoneWithMapping() bool {
 	for _, worker := range m.activeWorkers {
 		if worker.workerState == Alive {
-			// print(worker.workerID + " ")
-			// println(worker.workerState)
 			if worker.taskState != general.AfterMapping {
 				return false
 			}
@@ -474,6 +477,7 @@ func (m *Master) OnNotificationAboutFinishedReduceTask(workerID string) {
 
 	}
 	if m.areAllWorkerDoneWithReducing() {
+		fmt.Printf("Time until reduce finished: %v\n", time.Since(reduceStartTime))
 		m.task.State = general.AfterReducing
 		m.writeSortedRecordsToFile(m.sortedTournamentTreeRecords)
 		m.uploadFinalFile()
