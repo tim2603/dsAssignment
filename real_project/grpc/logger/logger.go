@@ -27,7 +27,7 @@ func (logger *Logger) Init(outputFile string) {
 	if err != nil {
 		error := os.MkdirAll(outputFile, os.ModePerm)
 		if error != nil {
-			fmt.Errorf("Error creating directory %s, error message %s", outputFile, error.Error())
+			fmt.Println(fmt.Errorf("Error creating directory %s, error message %s", outputFile, error.Error()))
 		}
 		var file, err = os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		logger.file = file
