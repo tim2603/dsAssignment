@@ -25,13 +25,15 @@ func (logger *Logger) Init(outputFile string) {
 	var file, err = os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	logger.file = file
 	if err != nil {
+		fmt.Println(err.Error())
 		error := os.MkdirAll(outputFile, os.ModePerm)
 		if error != nil {
-			fmt.Println(fmt.Errorf("Error creating directory %s, error message %s", outputFile, error.Error()))
+			fmt.Println(error.Error())
 		}
 		var file, err = os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		logger.file = file
 		if err != nil {
+			fmt.Println(err.Error())
 			var textHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: true, ReplaceAttr: replacer})
 			logger.logger = slog.New(textHandler)
 			logger.Info("Logging to stdout because file " + outputFile + " could not be opened")
