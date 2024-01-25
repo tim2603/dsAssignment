@@ -21,7 +21,7 @@ resource "google_compute_instance" "worker" {
     count = 3
 
   name         = "worker-${count.index}"
-  machine_type = "e2-micro"
+  machine_type = "n2-standard-2"
   zone         = "europe-north1-a"
   tags         = ["ssh"]
 
@@ -30,6 +30,11 @@ resource "google_compute_instance" "worker" {
       image = "debian-cloud/debian-11"
     }
     
+  }
+
+  service_account {
+    email  = "614968029879-compute@developer.gserviceaccount.com"
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 
   metadata_startup_script = "${file("startup-script-worker.sh")}"
@@ -43,32 +48,67 @@ resource "google_compute_instance" "worker" {
   }  
 }
 
-# # Create a single Compute Engine instance
-# resource "google_compute_instance" "master" {
+# Dieser Code ist mit Terraform 4.25.0 und Versionen kompatibel, die mit 4.25.0 abwärtskompatibel sind.
+# Informationen zum Validieren dieses Terraform-Codes finden Sie unter https://developer.hashicorp.com/terraform/tutorials/gcp-get-started/google-cloud-platform-build#format-and-validate-the-configuration.
 
-#   name         = "master"
-#   machine_type = "n2-standard-2"
-#   zone         = "europe-north1-a"
-#   tags         = ["ssh"]
+resource "google_compute_instance" "worker-e2" {
+      count = 8
+  boot_disk {
+    auto_delete = true
+    device_name = "worker-${count.index}"
 
-#   boot_disk {
-#     initialize_params {
-#       image = "debian-cloud/debian-11"
-#     }
-    
-#   }
+    initialize_params {
+      image = "projects/debian-cloud/global/images/debian-11-bullseye-v20240110"
+      size  = 10
+      type  = "pd-balanced"
+    }
 
-#   metadata_startup_script = "${file("startup-script-master.sh")}"
+    mode = "READ_WRITE"
+  }
 
-#   network_interface {
-#     subnetwork = google_compute_subnetwork.default.id
+  can_ip_forward      = false
+  deletion_protection = false
+  enable_display      = false
 
-#     access_config {
-#       # Include this section to give the VM an external IP address
-#     }
-#   }
-  
-# }
+  labels = {
+    goog-ec-src = "vm_add-tf"
+  }
+
+  machine_type = "e2-medium"
+  name         = "worker-${count.index}"
+
+  network_interface {
+    access_config {
+      network_tier = "PREMIUM"
+    }
+
+    queue_count = 0
+    stack_type  = "IPV4_ONLY"
+    subnetwork  = "projects/distributedsystems-405712/regions/europe-north1/subnetworks/default"
+  }
+
+  scheduling {
+    automatic_restart   = true
+    on_host_maintenance = "MIGRATE"
+    preemptible         = false
+    provisioning_model  = "STANDARD"
+  }
+
+  service_account {
+    email  = "614968029879-compute@developer.gserviceaccount.com"
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
+
+  shielded_instance_config {
+    enable_integrity_monitoring = true
+    enable_secure_boot          = false
+    enable_vtpm                 = true
+  }
+
+  zone = "europe-north1-a"
+  metadata_startup_script = "sudo apt-get install git -y && git clone https://github.com/tim2603/dsAssignment.git && cd dsAssignment && git checkout tim"
+}
+
 
 
 resource "google_compute_firewall" "ssh" {
