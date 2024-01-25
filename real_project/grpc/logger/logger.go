@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -24,7 +25,10 @@ func (logger *Logger) Init(outputFile string) {
 	var file, err = os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	logger.file = file
 	if err != nil {
-		os.MkdirAll(outputFile, os.ModePerm)
+		error := os.MkdirAll(outputFile, os.ModePerm)
+		if error != nil {
+			fmt.Errorf("Error creating directory %s, error message %s", outputFile, error.Error())
+		}
 		var file, err = os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		logger.file = file
 		if err != nil {
