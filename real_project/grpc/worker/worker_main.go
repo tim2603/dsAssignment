@@ -270,7 +270,7 @@ func main() {
 	own_port := os.Args[5]
 	master_address := master_ip + ":" + master_port
 	own_address := own_ip + ":" + own_port
-	logger.Init("/worker-" + master_id + ".log")
+	logger.Init("./worker-" + master_id + ".log")
 	logger.Debug("Starting")
 
 	worker := &Worker{masterID: master_id, masterClient: getMasterClient(master_address)}
