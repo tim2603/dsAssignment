@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
-	"ds/grpc/ds"
-	logging "ds/grpc/logger"
+	"ds_assignment/grpc/ds"
+	logging "ds_assignment/grpc/logger"
 	"flag"
 	"fmt"
 	"io"
@@ -92,15 +92,15 @@ func (worker *Worker) concatFiles(filenames []string) []string {
 			}
 		}(file)
 
-		bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
-		obj := bkt.Object(filename)
-		reader, error := obj.NewReader(context.Background())
-		if error != nil {
-			logger.Error(error.Error())
-		}
-		scanner := bufio.NewScanner(reader)
+		// bkt := worker.cloudStorageClient.Bucket("distributed_systems2024")
+		// obj := bkt.Object(filename)
+		// reader, error := obj.NewReader(context.Background())
+		// if error != nil {
+		// 	logger.Error(error.Error())
+		// }
+		// scanner := bufio.NewScanner(reader)
 
-		// scanner := bufio.NewScanner(file)
+		scanner := bufio.NewScanner(file)
 
 		for scanner.Scan() {
 			s = append(s, scanner.Text())
@@ -128,7 +128,7 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 
 	worker.writeContentToFileInLocalStorage(concattedFiles, "./intermediate-files/Intermediate-file-"+workerId)
 	// worker.uploadFile("./intermediate-files/Intermediate-file-"+workerId, "intermediate-files/Intermediate-file-"+workerId+".txt")
-	worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
+	// worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
 
 	logger.Debug("Finished dummy map task")
 	fmt.Printf("Time map task took: %v\n", time.Since(mapStartTime))
@@ -140,6 +140,7 @@ func (worker *Worker) writeContentToFileInLocalStorage(content []string, filenam
 	}
 	defer newFile.Close()
 
+	fmt.Println("Writing to file " + filename)
 	for _, line := range content {
 		newFile.WriteString(line + "\n")
 	}
@@ -275,7 +276,7 @@ func main() {
 	logger.Debug("Starting")
 
 	worker := &Worker{masterID: master_id, masterClient: getMasterClient(master_address)}
-	worker.connectToCloudStorage()
+	// worker.connectToCloudStorage()
 
 	lis, err := net.Listen("tcp", ":"+own_port)
 	if err != nil {

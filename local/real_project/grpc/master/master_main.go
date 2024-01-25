@@ -5,9 +5,9 @@ package main
 
 import (
 	"context"
-	"ds/grpc/general"
-	logging "ds/grpc/logger"
-	"ds_local/grpc/ds"
+	"ds_assignment/grpc/ds"
+	"ds_assignment/grpc/general"
+	logging "ds_assignment/grpc/logger"
 	"flag"
 	"fmt"
 	"io"
@@ -349,8 +349,8 @@ func (m *Master) startReducePhase() {
 	// fmt.Printf("Time until reduce started: %v\n", time.Since(startTime))
 
 	m.task.State = general.Reducing
-	// m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
-	m.intermediateFiles = m.listFilesInCloudStorageDir("intermediate-files/", ".txt")
+	m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
+	// m.intermediateFiles = m.listFilesInCloudStorageDir("intermediate-files/", ".txt")
 	m.distributeCalculation(len(m.intermediateFiles), general.AfterMapping)
 	logger.Debug("Starting Reduce phase with " + strconv.Itoa(len(m.activeWorkers)) + " workers")
 	a := 0
@@ -480,7 +480,7 @@ func (m *Master) OnNotificationAboutFinishedReduceTask(workerID string) {
 		fmt.Printf("Time reduce-task took: %v\n", time.Since(reduceStartTime))
 		m.task.State = general.AfterReducing
 		m.writeSortedRecordsToFile(m.sortedTournamentTreeRecords)
-		m.uploadFinalFile()
+		// m.uploadFinalFile()
 		logger.Debug("MapReduce-task finished!")
 		fmt.Println("MapReduce-task finished!")
 		fmt.Printf("Time whole task took: %v\n", time.Since(mapStartTime))
@@ -607,8 +607,9 @@ func main() {
 	// filenames := listFilesInDir("../../../data/")
 
 	master := &Master{interval: 15, task: &general.MapReduceTask{N_mappers: n_workers, N_reducers: n_workers}, currentTournamentTreeRecords: make(map[string]RecordEntry, 6), sortedTournamentTreeRecords: make([]RecordEntry, 0, 10000), threshholdForRecordsToWrite: 10000}
-	master.connectToCloudStorage()
-	master.inputFiles = master.listFilesInCloudStorageDir("input-data", ".txt")
+	// master.connectToCloudStorage()
+	// master.inputFiles = master.listFilesInCloudStorageDir("input-data", ".txt")
+	master.inputFiles = listFilesInDir("../../../data/")
 	ds.RegisterCommunicationWithMasterServiceServer(s, &Server{master: master})
 	go func() {
 		if err := s.Serve(lis); err != nil {

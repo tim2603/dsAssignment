@@ -1,2 +1,5 @@
 #!/bin/bash
-rm ./logs/*
+cd ./grpc/worker/
+rm *.log
+cd ../master/
+rm *.log
