@@ -1,0 +1,63 @@
+syntax = 'proto3';
+package ds;
+option go_package = "ds/";
+
+
+// Wird vom Worker aufgerufen und im Master implementiert
+service CommunicationWithMasterService {
+    rpc SendAddressToMaster(Address) returns (EmptyMessage) {};
+    rpc SendHeartBeatToMaster(Heartbeat) returns (EmptyMessage) {};
+    rpc NotifyAboutFinishedMapTask(WorkerID) returns (EmptyMessage) {};
+    rpc NotifyAboutFinishedReduceTask(WorkerID) returns (EmptyMessage) {};
+    rpc SendCurrentTournamentTreeValue(TournamentTreeValue) returns (EmptyMessage) {};
+}
+
+message EmptyMessage {
+
+}
+
+message TournamentTreeValue {
+    WorkerID workerId = 1;
+    string value = 2;
+}
+
+message Address {
+    WorkerID workerId = 1;
+    string address = 2;
+}
+
+message Heartbeat {
+    WorkerID workerId = 1;
+}
+
+message MapTask {
+    repeated string filenames = 1;
+}
+
+message ReduceTask {
+    repeated string intermediateFile = 1;
+}
+
+message MapTaskResult {
+
+}
+
+message ReduceTaskResult {
+
+}
+
+message WorkerID {
+    string workerId = 1;
+}
+
+message TournamentTreeSelection {
+    bool selected = 1;
+}
+
+// Wird vom Master aufgerufen und im Worker implemetiert
+service CommunicationWithWorkerService {
+    rpc assignMapTask(MapTask) returns (EmptyMessage) {};
+    rpc assignReduceTask(ReduceTask) returns (EmptyMessage) {};
+    rpc sendSelectedTournamentTreeSelection(TournamentTreeSelection) returns (EmptyMessage) {};
+    rpc restartTournamentTree(EmptyMessage) returns (EmptyMessage) {};
+}

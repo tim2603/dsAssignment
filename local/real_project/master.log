@@ -1,0 +1,6 @@
+time=2024-01-25T14:33:29.240+01:00 level=DEBUG source=logger.go:50 msg=Starting
+time=2024-01-25T14:33:29.240+01:00 level=DEBUG source=logger.go:50 msg="Connected to Google Cloud Storage"
+time=2024-01-25T14:33:29.659+01:00 level=DEBUG source=logger.go:50 msg="Files in cloud storage directory: input-data/10_bank_customers.txt, input-data/1_bank_customers.txt, input-data/2_bank_customers.txt, input-data/3_bank_customers.txt, input-data/4_bank_customers.txt, input-data/5_bank_customers.txt, input-data/6_bank_customers.txt, input-data/7_bank_customers.txt, input-data/8_bank_customers.txt, input-data/9_bank_customers.txt"
+time=2024-01-25T14:33:55.867+01:00 level=DEBUG source=logger.go:50 msg=Starting
+time=2024-01-25T14:33:55.868+01:00 level=DEBUG source=logger.go:50 msg="Connected to Google Cloud Storage"
+time=2024-01-25T14:33:56.072+01:00 level=DEBUG source=logger.go:50 msg="Files in cloud storage directory: input-data/10_bank_customers.txt, input-data/1_bank_customers.txt, input-data/2_bank_customers.txt, input-data/3_bank_customers.txt, input-data/4_bank_customers.txt, input-data/5_bank_customers.txt, input-data/6_bank_customers.txt, input-data/7_bank_customers.txt, input-data/8_bank_customers.txt, input-data/9_bank_customers.txt"
