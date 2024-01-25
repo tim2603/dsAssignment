@@ -35,10 +35,13 @@ func (logger *Logger) Init(outputFile string) {
 			var textHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: true, ReplaceAttr: replacer})
 			logger.logger = slog.New(textHandler)
 			logger.Info("Logging to stdout because file " + outputFile + " could not be opened")
+			logger.logger = slog.New(textHandler)
 		}
+	} else {
+
+		var textHandler = slog.NewTextHandler(file, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: true, ReplaceAttr: replacer})
+		logger.logger = slog.New(textHandler)
 	}
-	var textHandler = slog.NewTextHandler(file, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: true, ReplaceAttr: replacer})
-	logger.logger = slog.New(textHandler)
 }
 
 func (logger *Logger) Debug(msg string, args ...any) {
