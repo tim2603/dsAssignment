@@ -131,7 +131,7 @@ func (worker *Worker) mapping(mapTask *ds.MapTask) {
 	worker.writeContentToFileInCloudStorage(concattedFiles, "intermediate-files/Intermediate-file-"+workerId+".txt")
 
 	logger.Debug("Finished dummy map task")
-	fmt.Printf("Time until map task finished: %v\n", time.Since(mapStartTime))
+	fmt.Printf("Time map task took: %v\n", time.Since(mapStartTime))
 }
 
 func (worker *Worker) writeContentToFileInLocalStorage(content []string, filename string) {
@@ -204,7 +204,7 @@ func (worker *Worker) reducing(reduceTask *ds.ReduceTask) {
 		time.Sleep(time.Second * 2)
 	}
 	logger.Debug("Finished reduce task")
-	fmt.Printf("Time until reduce task finished: %v\n", time.Since(reduceStartTime))
+	fmt.Printf("Time reduce task took: %v\n", time.Since(reduceStartTime))
 	worker.masterClient.NotifyAboutFinishedReduceTask(context.Background(), &ds.WorkerID{WorkerId: worker.masterID})
 }
 

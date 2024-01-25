@@ -346,7 +346,7 @@ func (m *Master) startReducePhase() {
 	// intermediate files auch auf google
 	// wait for every answer --> const communication via tournament tree method
 	reduceStartTime = time.Now()
-	fmt.Printf("Time until reduce started: %v\n", time.Since(startTime))
+	// fmt.Printf("Time until reduce started: %v\n", time.Since(startTime))
 
 	m.task.State = general.Reducing
 	// m.intermediateFiles = listFilesInDir("../worker/intermediate-files/")
@@ -449,7 +449,7 @@ func (m *Master) OnNotificationAboutFinishedMapTask(workerID string) {
 
 	}
 	if m.areAllWorkerDoneWithMapping() {
-		fmt.Printf("Time until map finished: %v\n", time.Since(mapStartTime))
+		fmt.Printf("Time map-task took: %v\n", time.Since(mapStartTime))
 		m.task.State = general.BeforeReducing
 		// m.intermediateFiles = listFilesInDir("../worker/intermediate_files/")
 		m.startReducePhase()
@@ -477,12 +477,13 @@ func (m *Master) OnNotificationAboutFinishedReduceTask(workerID string) {
 
 	}
 	if m.areAllWorkerDoneWithReducing() {
-		fmt.Printf("Time until reduce finished: %v\n", time.Since(reduceStartTime))
+		fmt.Printf("Time reduce-task took: %v\n", time.Since(reduceStartTime))
 		m.task.State = general.AfterReducing
 		m.writeSortedRecordsToFile(m.sortedTournamentTreeRecords)
 		m.uploadFinalFile()
 		logger.Debug("MapReduce-task finished!")
 		fmt.Println("MapReduce-task finished!")
+		fmt.Printf("Time whole task took: %v\n", time.Since(mapStartTime))
 	}
 }
 func (m *Master) areAllWorkerDoneWithReducing() bool {
